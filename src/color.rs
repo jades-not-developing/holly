@@ -36,6 +36,12 @@ pub const WHITE: Color = Color {
     b: 255,
 };
 
+pub const BLACK: Color = Color { 
+    r: 0,
+    g: 0,
+    b: 0,
+};
+
 pub const GRAY: Color = Color { 
     r: 120,
     g: 120,

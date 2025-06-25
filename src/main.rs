@@ -1,18 +1,7 @@
-use holly::{color, platform::{sdl::SDLPlatform, RenderEngine}};
+use holly::Holly;
 
 fn main() -> anyhow::Result<()> {
-    let mut engine = SDLPlatform::new("SDL Engine", 1280, 720)?;
+    let mut engine = Holly::new_sdl("SDL Test", 800, 800)?;
 
-    while engine.is_running() {
-        engine.pre_render()?;
-
-        engine.clear_screen(color::RED)?;
-
-        engine.render_rect(100, 100, 100, 100, color::BLUE)?;
-        engine.render_rect_outlined(100, 100, 100, 100, color::GREEN)?;
-
-        engine.post_render()?;
-    }
-
-    Ok(())
+    engine.start()
 }
