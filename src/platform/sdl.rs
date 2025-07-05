@@ -4,6 +4,10 @@ use sdl2::{event::Event, sys::*};
 
 use crate::{color::Color, platform::RenderEngine};
 
+unsafe extern "C" {
+    fn TTF_SetFontSize(font: *mut ttf::TTF_Font, ptsize: std::ffi::c_int);
+}
+
 #[derive(Debug)]
 pub enum SDLError {
     SDLInitializationError(CString),
@@ -48,6 +52,13 @@ enum SDLRenderInstruction {
     Clear,
     FillRect(sdl2::rect::Rect),
     DrawRect(sdl2::rect::Rect),
+    DrawText {
+        font: *mut SDL_Texture,
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+    },
 }
 
 pub struct SDLPlatform {
@@ -124,12 +135,18 @@ impl RenderEngine for SDLPlatform {
     }
 
     fn pre_render(&mut self) -> anyhow::Result<()> {
-        //for event in self.events.poll_iter() {
-        //    match event {
-        //        Event::Quit { .. } => self.running = false,
-        //        _ => {}
-        //    }
-        //}
+        unsafe {
+            let mut event: SDL_Event = std::mem::zeroed();
+
+            while SDL_PollEvent(&mut event) != 0 {
+                match event.type_ {
+                    t if t == SDL_EventType::SDL_QUIT as u32 => {
+                        self.running = false;
+                    }
+                    _ => {}
+                }
+            }
+        }
         Ok(())
     }
 
@@ -202,37 +219,69 @@ impl RenderEngine for SDLPlatform {
             .ok_or(SDLError::SDLFontNotRegistered(font_name))?;
 
         unsafe {
+            TTF_SetFontSize(font_name, font_size as i32);
             let s = sdl2::sys::ttf::TTF_RenderText_Solid(
                 font_name,
                 CString::new(text)?.as_ptr(),
                 color.into_sdl_sys(),
             );
-            //let t = sdl2::sys::SDL_CreateTextureFromSurface(self._sdl., surface)
 
-            //sdl2::sys::RenderC
+            let w = (*s).w;
+            let h = (*s).h;
+
+            let t = sdl2::sys::SDL_CreateTextureFromSurface(self.renderer, s);
+            SDL_FreeSurface(s);
+
+            let x = x as i32;
+            let y = y as i32;
+            self.instruction_queue.push(SDLRenderInstruction::DrawText {
+                font: t,
+                x,
+                y,
+                w,
+                h,
+            });
         }
         Ok(())
     }
 
     fn post_render(&mut self) -> anyhow::Result<()> {
-        let mut canvas = self.window.clone().into_canvas().build()?;
-
         for inst in &self.instruction_queue {
             match inst {
-                SDLRenderInstruction::SetDrawColor(c) => canvas.set_draw_color(*c),
-                SDLRenderInstruction::Clear => canvas.clear(),
-                SDLRenderInstruction::FillRect(r) => canvas
-                    .fill_rect(*r)
-                    .map_err(SDLError::SDLInstructionError)?,
-                SDLRenderInstruction::DrawRect(r) => canvas
-                    .draw_rect(*r)
-                    .map_err(SDLError::SDLInstructionError)?,
+                SDLRenderInstruction::SetDrawColor(c) => unsafe {
+                    SDL_SetRenderDrawColor(self.renderer, c.r, c.g, c.b, 255);
+                },
+                SDLRenderInstruction::Clear => unsafe {
+                    SDL_RenderClear(self.renderer);
+                },
+                SDLRenderInstruction::FillRect(r) => unsafe {
+                    SDL_RenderFillRect(self.renderer, r.raw());
+                },
+                SDLRenderInstruction::DrawRect(r) => unsafe {
+                    SDL_RenderDrawRect(self.renderer, r.raw());
+                },
+                SDLRenderInstruction::DrawText { font, x, y, w, h } => unsafe {
+                    let x = *x;
+                    let y = *y;
+                    let w = *w;
+                    let h = *h;
+                    SDL_RenderCopy(
+                        self.renderer,
+                        font.clone(),
+                        std::ptr::null(),
+                        &SDL_Rect { x, y, w, h },
+                    );
+                    SDL_DestroyTexture(font.clone());
+                },
             }
         }
 
         self.instruction_queue.clear();
 
-        canvas.present();
+        unsafe {
+            SDL_RenderPresent(self.renderer);
+        }
+
         Ok(())
     }
 

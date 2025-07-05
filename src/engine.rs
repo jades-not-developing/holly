@@ -30,7 +30,9 @@ impl Holly {
             self.engine.clear_screen(self.background)?;
 
             self.engine.render_rect(100, 100, 200, 200, Color::from_hex("#ff00ff")?)?;
-            self.engine.render_text("hello, world".into(), 100, 100, 12, Color::from_hex("#ff0000")?, "default".into())?;
+
+            self.engine.render_text("hello, world".into(), 100, 100, 50, Color::from_hex("#000000")?, "default".into())?;
+            self.engine.render_text("another line of text".into(), 100, 150, 50, Color::from_hex("#000000")?, "default".into())?;
 
             self.engine.post_render()?;
         }
