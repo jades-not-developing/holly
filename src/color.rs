@@ -82,11 +82,20 @@ impl Color {
             }
         }
     }
+
+    pub fn into_sdl_sys(&self) -> sdl2::sys::SDL_Color {
+        return sdl2::sys::SDL_Color {
+            r: self.r, 
+            g: self.g, 
+            b: self.b, 
+            a: 255, 
+        }
+    }
 }
 
-impl Into<sdl3::pixels::Color> for Color {
-    fn into(self) -> sdl3::pixels::Color {
-        sdl3::pixels::Color::RGB(self.r, self.g, self.b)
+impl From<Color> for sdl2::pixels::Color {
+    fn from(val: Color) -> Self {
+        sdl2::pixels::Color::RGB(val.r, val.g, val.b)
     }
 }
 

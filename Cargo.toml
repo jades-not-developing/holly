@@ -5,5 +5,6 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-sdl3 = { version = "0.14.32", features = ["build-from-source-static", "static-link"] }
+libc = "0.2.174"
+sdl2 = { version = "0.37.0", features = ["ttf", "use-pkgconfig"] }
 thiserror = "2.0.12"

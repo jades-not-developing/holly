@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use crate::{color::{self, Color}, platform::{sdl::SDLPlatform, RenderEngine}};
 
 pub struct Holly {
@@ -17,11 +19,18 @@ impl Holly {
         self.background = color;
     }
 
+    pub fn register_font(&mut self, name: impl Into<String>, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        self.engine.register_font(name.into(), path.as_ref())
+    }
+
     pub fn start(&mut self) -> anyhow::Result<()> {
         while self.engine.is_running() {
             self.engine.pre_render()?;
 
             self.engine.clear_screen(self.background)?;
+
+            self.engine.render_rect(100, 100, 200, 200, Color::from_hex("#ff00ff")?)?;
+            self.engine.render_text("hello, world".into(), 100, 100, 12, Color::from_hex("#ff0000")?, "default".into())?;
 
             self.engine.post_render()?;
         }
